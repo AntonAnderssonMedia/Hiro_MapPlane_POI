@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <!-- we import arjs version without NFT but with marker + location based support -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <body style="margin : 0px; overflow: hidden;">
+
+    <a-scene embedded arjs>
+
+      <!-- Light is optional for unlit textures, but fine to keep -->
+      <a-entity light="type: hemisphere; intensity: 1"></a-entity>
+
+      <a-assets timeout="30000" crossorigin="anonymous">
+        <!-- Use <img> (NOT a-asset-item) for textures -->
+        <img id="map" src="https://cdn.jsdelivr.net/gh/AntonAnderssonMedia/Camera_HiroModel@main/red-map-frame.png">
+      </a-assets>
+
+      <a-marker preset="hiro" emitevents="true" id="marker">
+        <!-- Plane covers the marker. Rotate -90deg around X so it lies flat on the marker plane. -->
+        <a-plane id="mapPlane"
+                 src="#map"
+                 position="0 0 0"
+                 rotation="-90 0 0"
+                 width="1" height="1"          
+                 material="transparent:true; side: double;"
+                 visible="false"></a-plane>
+      </a-marker>
+
+      <a-entity camera></a-entity>
+
+    </a-scene>
+
+        <script>
+      const marker = document.getElementById('marker');
+      const plane  = document.getElementById('mapPlane');
+      const img    = document.getElementById('map');
+
+      // Keep aspect ratio of the image by adjusting plane dimensions when the image loads
+      img.addEventListener('load', () => {
+        const ar = img.naturalWidth / img.naturalHeight;
+        const markerSize = 1; // AR.js default size for preset markers
+        const scaleFactor = 3.5;
+        
+        let w, h;
+
+        if (ar >= 1) {
+          w = markerSize * scaleFactor;
+          h = (markerSize / ar) * scaleFactor;
+        } else {
+          w = (markerSize * ar) * scaleFactor;
+          h = markerSize * scaleFactor;
+        }
+
+        plane.setAttribute('width',  w);
+        plane.setAttribute('height', h);
+
+        // Place the plane so its top-left corner sits on the marker origin, might be z-fighting
+        // (plane is rotated -90° around X, so top = -Z, left = -X)
+        // plane.setAttribute('position', `${w/2} 0 ${h/2}`);
+
+        // CHANGED: Tiny lift compared to above to avoid z-fighting with the marker
+        plane.setAttribute('position', `${w/2} 0.002 ${h/2}`);
+      });
+
+      marker.addEventListener('markerFound', () => plane.setAttribute('visible', true));
+      marker.addEventListener('markerLost',  () => plane.setAttribute('visible', false));
+    </script>
+  </body>
+</html>

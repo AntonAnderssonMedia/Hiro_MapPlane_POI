@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+  <title>Hiro + SWEREF POI</title>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#000}
+    .hud{position:fixed;left:8px;bottom:8px;color:#fff;font:14px system-ui;background:rgba(0,0,0,.45);padding:6px 8px;border-radius:8px}
+  </style>
+</head>
+<body>
+  <div class="hud">Point at <b>Hiro</b>. Square = Vaxkupan (SWEREF 99 TM).</div>
+
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;"
+           renderer="antialias:true; logarithmicDepthBuffer:true">
+    <a-assets timeout="30000" crossorigin="anonymous">
+      <img id="map" src="https://cdn.jsdelivr.net/gh/AntonAnderssonMedia/Camera_HiroModel@main/nrkpg-map.png">
+    </a-assets>
+
+    <a-entity light="type: hemisphere; intensity: 1"></a-entity>
+
+    <a-marker preset="hiro" emitevents="true" id="marker">
+      <!-- Map plane; marker sits at the map's TOP-LEFT corner -->
+      <a-plane id="mapPlane"
+               src="#map"
+               position="0 0 0"
+               rotation="-90 0 0"
+               width="1" height="1"
+               material="transparent:true; side: double;"
+               visible="false"></a-plane>
+
+      <!-- The POI square color="#FF3B30" -->
+      <a-box id="poiCube"
+             width="0.05" height="0.05" depth="0.05"
+             position="0 0.02 0"
+             material="shader: flat; color: red"
+             visible="false"></a-box>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    const marker = document.getElementById('marker');
+    const plane  = document.getElementById('mapPlane');
+    const img    = document.getElementById('map');
+    const cube   = document.getElementById('poiCube');
+
+    // Map bounds in SWEREF 99 TM (meters) from your sheet
+    const east_min  = 565000;
+    const east_max  = 575000;
+    const north_max = 6500000; // top
+    const north_min = 6490000; // bottom
+
+    // Vaxkupan (SWEREF 99 TM) — from your screenshot
+    const poi = { north: 6495019, east: 569026 };
+
+    const markerSize = 1;      // Hiro size unit
+    const scaleFactor = 4;     // map is 4× the marker size
+
+    function swerefToUV(north, east, W, H){
+      const u = (east - east_min) / (east_max - east_min) * W;
+      const v = (north_max - north) / (north_max - north_min) * H;
+      return [u, v];
+    }
+
+    img.addEventListener('load', () => {
+      // Keep image aspect ratio — compute plane size
+      const ar = img.naturalWidth / img.naturalHeight;
+      let W, H;
+      if (ar >= 1) { W = markerSize * scaleFactor; H = (markerSize / ar) * scaleFactor; }
+      else         { W = (markerSize * ar) * scaleFactor; H = markerSize * scaleFactor; }
+      plane.setAttribute('width',  W);
+      plane.setAttribute('height', H);
+
+      // Put TOP-LEFT of plane at marker origin
+      plane.setAttribute('position', `${W/2} 0 ${H/2}`);
+
+      // Place square at POI
+      const [u, v] = swerefToUV(poi.north, poi.east, W, H);
+      cube.setAttribute('position', `${u} 0.02 ${v}`);
+
+      // Show while marker is visible
+      marker.addEventListener('markerFound', () => {
+        plane.setAttribute('visible', true);
+        cube.setAttribute('visible', true);
+      });
+      marker.addEventListener('markerLost', () => {
+        plane.setAttribute('visible', false);
+        cube.setAttribute('visible', false);
+      });
+    });
+  </script>
+</body>
+</html>

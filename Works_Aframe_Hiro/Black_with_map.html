@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+    <title>Hiro + PNG Map</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.js"></script>
+    <style>
+      html,body{margin:0;height:100%;overflow:hidden;background:#000}
+      .hud{position:fixed;left:8px;bottom:8px;color:#fff;font:14px system-ui;background:rgba(0,0,0,.45);padding:6px 8px;border-radius:8px}
+    </style>
+  </head>
+  
+  <body>
+    <div class="hud">Point at the <b>Hiro</b> marker</div>
+
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;"
+             renderer="antialias:true; logarithmicDepthBuffer:true">
+      <a-assets timeout="30000" crossorigin="anonymous">
+        <!-- Use <img> (NOT a-asset-item) for textures -->
+        <img id="map" src="https://cdn.jsdelivr.net/gh/AntonAnderssonMedia/Camera_HiroModel@main/nrkpg-map.png">
+      </a-assets>
+
+      <!-- Light is optional for unlit textures, but fine to keep -->
+      <a-entity light="type: hemisphere; intensity: 1"></a-entity>
+
+      <a-marker preset="hiro" emitevents="true" id="marker">
+        <!-- Plane covers the marker. Rotate -90deg around X so it lies flat on the marker plane. -->
+        <a-plane id="mapPlane"
+                 src="#map"
+                 position="0 0 0"
+                 rotation="-90 0 0"
+                 width="1" height="1"          
+                 material="transparent:true; side: double;"
+                 visible="false"></a-plane>
+      </a-marker>
+
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+      const marker = document.getElementById('marker');
+      const plane  = document.getElementById('mapPlane');
+      const img    = document.getElementById('map');
+
+      // Keep aspect ratio of the image by adjusting plane dimensions when the image loads
+      img.addEventListener('load', () => {
+        const ar = img.naturalWidth / img.naturalHeight;
+        const markerSize = 1; // AR.js default size for preset markers
+        const scaleFactor = 4;
+        if (ar >= 1) {
+          plane.setAttribute('width',  markerSize * scaleFactor);
+          plane.setAttribute('height', markerSize / ar * scaleFactor);
+        } else {
+          plane.setAttribute('width',  markerSize * ar * scaleFactor);
+          plane.setAttribute('height', markerSize * scaleFactor);
+        }
+      });
+
+      marker.addEventListener('markerFound', () => plane.setAttribute('visible', true));
+      marker.addEventListener('markerLost',  () => plane.setAttribute('visible', false));
+    </script>
+  </body>
+</html>

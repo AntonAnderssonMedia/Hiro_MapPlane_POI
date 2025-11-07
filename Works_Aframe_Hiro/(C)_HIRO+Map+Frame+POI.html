@@ -16,32 +16,31 @@
       </a-assets>
 
       <a-marker preset="hiro" emitevents="true" id="marker">
-        <!-- red frame overlay (your existing plane) width="1" height="1" scale="1, 1, 1"-->
+        <!-- red frame overlay (your existing plane) -->
         <a-plane id="mapPlane"
                  src="#map"
                  position="0 0 0"
                  rotation="-90 0 0"
+                 width="1" height="1"
                  material="transparent:true; side: double;"
-                 visible="true"></a-plane>
+                 visible="false"></a-plane>
 
-        <!-- POI as PNG, flat on the map 
-             width, height, depth is compared to the marker (parent) 
-             Marker states the 
-        -->
-      <a-box id="poiDot"
-             width="0.05" height="0.05" depth="0.05"
-             position="0 0.02 0"
-             material="shader: flat; color: red"
-             visible="false"></a-box>
+        <!-- POI as PNG, flat on the map -->
+        <a-image id="poiDot"
+                 src="#poi"
+                 rotation="-90 0 0"
+                 width="0.12" height="0.12"
+                 position="0 0.01 0"
+                 visible="false"></a-image>
 
         <!-- Optional: thin SWEREF outline square (helps verify bounds) -->
         <a-entity id="swerefOutline" visible="false">
-           <!-- we’ll size + place these in JS once we know W×H -->
+          <!-- we’ll size + place these in JS once we know W×H -->
           <a-box id="edgeL" color="#FF0000" height="0.002" depth="1" width="0.02" position="0 0 0"></a-box>
           <a-box id="edgeR" color="#FF0000" height="0.002" depth="1" width="0.02" position="0 0 0"></a-box>
           <a-box id="edgeT" color="#FF0000" height="0.002" depth="0.02" width="1" position="0 0 0"></a-box>
           <a-box id="edgeB" color="#FF0000" height="0.002" depth="0.02" width="1" position="0 0 0"></a-box>
-        </a-entity> 
+        </a-entity>
       </a-marker>
 
       <a-entity camera></a-entity>
@@ -50,7 +49,7 @@
     <script>
       const marker = document.getElementById('marker');
       const plane  = document.getElementById('mapPlane');
-      const map    = document.getElementById('map');
+      const img    = document.getElementById('map');
       const poiDot = document.getElementById('poiDot');
       const outline= document.getElementById('swerefOutline');
       const edgeL  = document.getElementById('edgeL');
@@ -65,14 +64,11 @@
       const northMin = 6490000;  // bottom
 
       // POI: Vaxkupan (SWEREF 99 TM)
-      //const poi = { north: 6495019, east: 569026 };
-
-      // POI: Visualization Center (SWEREF 99 TM)
-      const poi = { north: 6494903, east: 568453 };
+      const poi = { north: 6495019, east: 569026 };
 
       // same scale as your working code
       const markerSize = 1;       
-      const scaleFactor = 3.2419; // 20.1 / 6.2 = 3.2419
+      const scaleFactor = 3.5;    
 
       function swerefToUV(north, east, W, H){
         const u = (east  - eastMin)  / (eastMax  - eastMin)  * W;      // right
@@ -80,9 +76,9 @@
         return [u, v];
       }
 
-      map.addEventListener('load', () => {
+      img.addEventListener('load', () => {
         // keep your aspect logic → compute plane width/height
-        const ar = map.naturalWidth / map.naturalHeight;
+        const ar = img.naturalWidth / img.naturalHeight;
         let W, H;
         if (ar >= 1) { W = markerSize * scaleFactor; H = (markerSize / ar) * scaleFactor; }
         else         { W = (markerSize * ar) * scaleFactor; H = markerSize * scaleFactor; }
@@ -93,10 +89,9 @@
         plane.setAttribute('position', `${W/2} 0.002 ${H/2}`);
 
         // place the POI PNG by SWEREF
-        // 70 seems to be size of square sides
         const [u, v] = swerefToUV(poi.north, poi.east, W, H);
         poiDot.setAttribute('position', `${u} 0.01 ${v}`);
-        poiDot.setAttribute('scale', `1 1 1`)
+
       });
 
       // show/hide when marker is visible
